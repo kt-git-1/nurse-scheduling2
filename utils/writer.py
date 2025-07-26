@@ -18,7 +18,6 @@ def fill_shift_cells(ws: Worksheet, assignments: pd.DataFrame) -> None:
     codes only for matching rows.  The template is assumed to have nurse
     names starting from row 6 in column A and day columns starting from
     column C.
-
     Parameters
     ----------
     ws : Worksheet
