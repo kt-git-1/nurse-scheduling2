@@ -51,6 +51,9 @@ SHIFT_TYPES = [
     "2・CT",
 ]
 
+# Mapping from shift code string to its index for safety
+SHIFT_CODE = {code: idx for idx, code in enumerate(SHIFT_TYPES)}
+
 # 曜日ごとの休み設定
 # 木・日: 全休, 土: 午後休
 HOLIDAY_MAP = {
@@ -72,3 +75,6 @@ NIGHT_SHIFT_PREFERRED = []
 REQUEST_CSV_PATH = DATA_DIR / "req_shift_8.csv"
 TEMPLATE_PATH = DATA_DIR / "shift_template.xlsx"
 OUTPUT_EXCEL_PATH = BASE_DIR / "shift_output.xlsx"
+
+# Solver time limit in seconds
+SOLVER_TIMEOUT = 10
