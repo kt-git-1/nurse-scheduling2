@@ -72,4 +72,3 @@ NIGHT_SHIFT_PREFERRED = []
 REQUEST_CSV_PATH = DATA_DIR / "req_shift_8.csv"
 TEMPLATE_PATH = DATA_DIR / "shift_template.xlsx"
 OUTPUT_EXCEL_PATH = BASE_DIR / "shift_output.xlsx"
-
