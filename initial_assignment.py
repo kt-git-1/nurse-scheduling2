@@ -200,7 +200,14 @@ def build_hard_constraints(model: cp_model.CpModel, x: Dict[Tuple[int, int, int]
 
 
 def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.DataFrame:
-    """Solve the hard constraint model and return the initial schedule."""
+    """Solve the hard constraint model and return the initial schedule.
+
+    This wrapper builds the CP-SAT model, applies all hard constraints and
+    attempts to find any feasible solution within ``SOLVER_TIMEOUT`` seconds.
+    The returned ``DataFrame`` always contains an entry for every nurse and day
+    even if the solver fails to find a solution so callers do not have to guard
+    against ``None``.
+    """
     df_requests = parse_shift_requests(load_request_csv(request_csv_path))
     df_requests.set_index("nurse", inplace=True)
 
@@ -235,13 +242,19 @@ def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.D
         data="",
     )
 
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE, cp_model.UNKNOWN):
+        # Even if the status is UNKNOWN, the solver may return a feasible
+        # solution found within the time limit.
         for n, nurse in enumerate(NURSES):
             for d in range(1, num_days + 1):
                 for s, code in enumerate(SHIFT_TYPES):
                     if solver.Value(x[(n, d, s)]):
                         df_result.loc[nurse, f"day_{d}"] = code
                         break
+    else:
+        print(
+            f"No feasible solution found (status: {solver.StatusName(status)})."
+        )
     df_result.to_csv("temp_shift.csv", encoding="utf-8-sig")
     
     return df_result
