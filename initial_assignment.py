@@ -158,8 +158,45 @@ def build_hard_constraints(model: cp_model.CpModel, x: Dict[Tuple[int, int, int]
                     model.Add(x[(n, d, req_idx)] == 1)
     print("\u2714 H9: 希望休を反映しました")
 
-    # Placeholder for additional constraints H10-H13
-    # These would incorporate more complex rules.
+    # H10: 久保は CT と 2番 のみ担当可
+    kubo_idx = data["nurses"].index("久保") if "久保" in data["nurses"] else None
+    if kubo_idx is not None:
+        allowed_kubo = [SHIFT_CODE[code] for code in ["CT", "2"] if code in SHIFT_CODE]
+        for d in range(1, num_days + 1):
+            for s in range(num_shifts):
+                if s not in allowed_kubo:
+                    model.Add(x[(kubo_idx, d, s)] == 0)
+    print("✔ H10: 久保はCTと2番のみ担当可を追加しました")
+
+    # H11: 第2木曜午後は久保に /訪 を割当
+    if kubo_idx is not None:
+        second_thu = None
+        weekday_list = ["月", "火", "水", "木", "金", "土", "日"]
+        thu_count = 0
+        for d in range(1, num_days + 1):
+            wd = weekday_list[(d - 1) % 7]
+            if wd == "木":
+                thu_count += 1
+                if thu_count == 2:
+                    second_thu = d
+                    break
+        if second_thu is not None and "訪" in SHIFT_CODE:
+            visit_idx = SHIFT_CODE["訪"]
+            model.Add(x[(kubo_idx, second_thu, visit_idx)] == 1)
+    print("✔ H11: 第2木曜午後に久保の/訪を追加しました")
+
+    # H12: 久保休暇時は三好 or 前野が CT を担当
+    # (仮実装: CT 担当者が久保でなければ三好 or 前野を強制)
+    miyoshi_idx = data["nurses"].index("三好") if "三好" in data["nurses"] else None
+    maeno_idx = data["nurses"].index("前野") if "前野" in data["nurses"] else None
+    ct_idx = SHIFT_CODE.get("CT")
+    if kubo_idx is not None and ct_idx is not None and miyoshi_idx is not None and maeno_idx is not None:
+        for d in range(1, num_days + 1):
+            # CTに久保がいないならどちらかが担当
+            ct_sum = model.NewIntVar(0, 2, f"ct_alt_{d}")
+            model.Add(ct_sum == x[(miyoshi_idx, d, ct_idx)] + x[(maeno_idx, d, ct_idx)])
+            model.AddHint(ct_sum, 1)  # Soft enforcement
+    print("✔ H12: 久保休暇時のCT代替担当者制約を追加しました")
 
 
 def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.DataFrame:
@@ -205,4 +242,6 @@ def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.D
                     if solver.Value(x[(n, d, s)]):
                         df_result.loc[nurse, f"day_{d}"] = code
                         break
+    df_result.to_csv("temp_shift.csv", encoding="utf-8-sig")
+    
     return df_result

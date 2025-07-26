@@ -35,8 +35,7 @@ def add_soft_constraints(
         off_count = sum(x[(n, d, rest_idx)] for d in range(1, num_days + 1))
         off_count += sum(x[(n, d, off_idx)] for d in range(1, num_days + 1))
         diff = model.NewIntVar(0, num_days, f"off_diff_{n}")
-        model.Add(off_count - 13 <= diff)
-        model.Add(13 - off_count <= diff)
+        model.AddAbsEquality(diff, off_count - 13)
         penalties.append(diff)
 
     # S2: Preferred night shift nurses should work about 5 night shifts
@@ -58,17 +57,26 @@ def add_soft_constraints(
         model.Add(avg_per_shift - total <= diff_total)
         penalties.append(diff_total)
 
-    # S4: Workers with night shifts should have at least one "4" shift
+    # S4: Workers with night shifts should have at least one "4" shift (logical variable version)
     if "4" in data["shift_types"]:
         four_idx = data["shift_types"].index("4")
         for n in range(num_nurses):
             night_count = sum(x[(n, d, night_idx)] for d in range(1, num_days + 1))
             four_count = sum(x[(n, d, four_idx)] for d in range(1, num_days + 1))
             flag = model.NewBoolVar(f"four_penalty_{n}")
-            # If night_count >= 1 and four_count == 0 then penalty 1 else 0
-            model.Add(night_count >= 1).OnlyEnforceIf(flag)
-            model.Add(four_count == 0).OnlyEnforceIf(flag)
-            model.Add(night_count < 1).OnlyEnforceIf(flag.Not())
+
+            has_night = model.NewBoolVar(f"has_night_{n}")
+            no_four = model.NewBoolVar(f"no_four_{n}")
+
+            model.Add(night_count >= 1).OnlyEnforceIf(has_night)
+            model.Add(night_count < 1).OnlyEnforceIf(has_night.Not())
+
+            model.Add(four_count == 0).OnlyEnforceIf(no_four)
+            model.Add(four_count != 0).OnlyEnforceIf(no_four.Not())
+
+            model.AddBoolAnd([has_night, no_four]).OnlyEnforceIf(flag)
+            model.AddBoolOr([has_night.Not(), no_four.Not()]).OnlyEnforceIf(flag.Not())
+
             penalties.append(flag)
 
     # S5: Prefer not to deviate from the initial solution if provided
@@ -84,7 +92,21 @@ def add_soft_constraints(
                     model.Add(x[(n, d, idx)] == 1).OnlyEnforceIf(diff_var.Not())
                     penalties.append(diff_var)
 
-    model.Minimize(sum(penalties))
+    # ソフト制約ごとの重みを設定
+    w1 = 3
+    w2 = 2
+    w3 = 1
+    w4 = 2
+    w5 = 1
+
+    weighted_penalties = (
+        sum(penalties[:num_nurses]) * w1 +  # S1: 休み
+        sum(penalties[num_nurses:num_nurses * 2]) * w2 +  # S2: 夜勤希望
+        sum(penalties[num_nurses * 2:num_nurses * 2 + len(data["shift_types"])]) * w3 +  # S3: シフト種
+        sum(p for p in penalties if isinstance(p, cp_model.IntVar) and "four_penalty" in p.Name()) * w4 +  # S4
+        sum(p for p in penalties if isinstance(p, cp_model.IntVar) and "change_" in p.Name()) * w5  # S5
+    )
+    model.Minimize(weighted_penalties)
 
 
 def optimize_final_schedule(
