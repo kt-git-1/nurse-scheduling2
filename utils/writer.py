@@ -13,6 +13,11 @@ from .constants import TEMPLATE_PATH
 def fill_shift_cells(ws: Worksheet, assignments: pd.DataFrame) -> None:
     """Fill each cell in the template sheet with the shift assignments.
 
+    This implementation mimics the manual Excel workflow by first reading
+    the nurse names already present in the template and then writing shift
+    codes only for matching rows.  The template is assumed to have nurse
+    names starting from row 6 in column A and day columns starting from
+    column C.
     Parameters
     ----------
     ws : Worksheet
@@ -20,10 +25,24 @@ def fill_shift_cells(ws: Worksheet, assignments: pd.DataFrame) -> None:
     assignments : pandas.DataFrame
         DataFrame indexed by nurse names with columns day_1, day_2, ...
     """
-    for row_idx, nurse in enumerate(assignments.index, start=2):
-        for col_idx, day in enumerate(assignments.columns, start=2):
-            value = assignments.loc[nurse, day]
-            ws.cell(row=row_idx, column=col_idx, value=value)
+
+    # Template rows containing nurse names, e.g. A6:A19
+    start_row = 6
+    nurse_rows = list(range(start_row, start_row + len(assignments.index)))
+    nurse_names_in_excel = [ws.cell(row=r, column=1).value for r in nurse_rows]
+
+    # Day columns in the result (max 31 days). Excel columns start at C (index 3)
+    col_offset = 3
+    date_cols = assignments.columns.tolist()[:31]
+
+    for nurse in assignments.index:
+        if nurse not in nurse_names_in_excel:
+            # Skip nurses not present in the template
+            continue
+        row_idx = nurse_names_in_excel.index(nurse) + start_row
+        for j, day_col in enumerate(date_cols):
+            shift = assignments.at[nurse, day_col]
+            ws.cell(row=row_idx, column=col_offset + j, value=shift)
 
 
 def write_to_excel(
