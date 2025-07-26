@@ -235,6 +235,7 @@ def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.D
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = SOLVER_TIMEOUT
     status = solver.Solve(model)
+    print(f"Solver status: {solver.StatusName(status)}")
 
     df_result = pd.DataFrame(
         index=NURSES,
@@ -247,14 +248,18 @@ def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.D
         # solution found within the time limit.
         for n, nurse in enumerate(NURSES):
             for d in range(1, num_days + 1):
+                assigned = False
                 for s, code in enumerate(SHIFT_TYPES):
                     if solver.Value(x[(n, d, s)]):
                         df_result.loc[nurse, f"day_{d}"] = code
+                        assigned = True
                         break
+                if not assigned:
+                    print(f"⚠ {nurse} の {d}日目に割当なし")
     else:
         print(
             f"No feasible solution found (status: {solver.StatusName(status)})."
         )
     df_result.to_csv("temp_shift.csv", encoding="utf-8-sig")
-    
+
     return df_result
