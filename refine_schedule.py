@@ -88,7 +88,7 @@ def add_soft_constraints(
 
 
 def optimize_final_schedule(
-    request_csv_path: Path | str = REQUEST_CSV_PATH,
+    request_csv_path: Path | str = REQUEST_CSV_PATH
 ) -> pd.DataFrame:
     """Optimize the final schedule considering soft constraints."""
     initial_df = solve_initial_model(request_csv_path)
