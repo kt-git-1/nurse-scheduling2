@@ -32,7 +32,7 @@ def build_hard_constraints(model: cp_model.CpModel, x: Dict[Tuple[int, int, int]
     night_idx = data["shift_types"].index("夜")
     off_idx = data["shift_types"].index("×")
 
-    requests: pd.DataFrame = data.get("requests")
+    requests: pd.DataFrame | None = data.get("requests")
 
     # H1: Each nurse must have exactly one shift per day
     for n in range(num_nurses):
@@ -51,8 +51,13 @@ def build_hard_constraints(model: cp_model.CpModel, x: Dict[Tuple[int, int, int]
     # H9: Respect shift requests (symbols already converted)
     if requests is not None:
         for n, nurse in enumerate(data["nurses"]):
+            if nurse not in requests.index:
+                continue
             for d in range(1, num_days + 1):
-                req_shift = requests.loc[nurse, f"day_{d}"]
+                col = f"day_{d}"
+                if col not in requests.columns:
+                    continue
+                req_shift = requests.loc[nurse, col]
                 if pd.notna(req_shift) and req_shift in data["shift_types"]:
                     req_idx = data["shift_types"].index(req_shift)
                     model.Add(x[(n, d, req_idx)] == 1)

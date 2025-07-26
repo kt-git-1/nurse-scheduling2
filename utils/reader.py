@@ -6,11 +6,12 @@ from .constants import NURSES
 
 def load_request_csv(path: Path | str) -> pd.DataFrame:
     """Load the shift request CSV into a DataFrame."""
-    df = pd.read_csv(path, encoding="utf-8")
+    df = pd.read_csv(path, encoding="utf-8-sig")
     # The first two rows contain date and weekday information.
     df = df.iloc[2:].reset_index(drop=True)
-    # Rename the first column to nurse name.
+    # Rename the first column to nurse name and strip whitespace
     df.rename(columns={df.columns[0]: "nurse"}, inplace=True)
+    df["nurse"] = df["nurse"].str.strip()
     # Drop the last column if it's a notes column.
     if df.columns[-1] == "特記事項":
         df = df.iloc[:, :-1]
