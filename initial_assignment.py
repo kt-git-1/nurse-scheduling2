@@ -1,10 +1,11 @@
 """Initial schedule assignment using OR-Tools."""
+from pathlib import Path
 from typing import Dict, Tuple
 
 import pandas as pd
 from ortools.sat.python import cp_model
 
-from utils.constants import NURSES, SHIFT_TYPES, NUM_DAYS
+from utils.constants import NURSES, SHIFT_TYPES, NUM_DAYS, REQUEST_CSV_PATH
 from utils.reader import load_request_csv, parse_shift_requests
 
 
@@ -61,7 +62,7 @@ def build_hard_constraints(model: cp_model.CpModel, x: Dict[Tuple[int, int, int]
     # restrictions or minimum rest periods.
 
 
-def solve_initial_model(request_csv_path: str = "data/req_shift_8.csv") -> pd.DataFrame:
+def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.DataFrame:
     """Solve the hard constraint model and return the initial schedule."""
     df_requests = parse_shift_requests(load_request_csv(request_csv_path))
     df_requests.set_index("nurse", inplace=True)

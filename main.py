@@ -1,14 +1,12 @@
 import pandas as pd
+from pathlib import Path
 
 from utils.reader import load_request_csv, parse_shift_requests
 from initial_assignment import solve_initial_model
 from refine_schedule import optimize_final_schedule
 from utils.writer import write_to_excel
 from utils.validator import validate_constraints, summarize_violations
-
-
-REQUEST_CSV_PATH = "data/req_shift_8.csv"
-OUTPUT_EXCEL_PATH = "shift_output.xlsx"
+from utils.constants import REQUEST_CSV_PATH, OUTPUT_EXCEL_PATH
 
 
 def main() -> None:

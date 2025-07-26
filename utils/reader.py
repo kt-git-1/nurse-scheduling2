@@ -1,9 +1,10 @@
+from pathlib import Path
 import pandas as pd
 
 from .constants import NURSES
 
 
-def load_request_csv(path: str) -> pd.DataFrame:
+def load_request_csv(path: Path | str) -> pd.DataFrame:
     """Load the shift request CSV into a DataFrame."""
     df = pd.read_csv(path, encoding="utf-8")
     # The first two rows contain date and weekday information.

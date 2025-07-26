@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """Constants for nurse scheduling."""
 
+from pathlib import Path
+
+# Base directory of the project
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = BASE_DIR / "data"
+
 # 看護師名のリスト
 NURSES = [
     "樋渡",
@@ -62,3 +68,7 @@ NUM_DAYS = 31
 # 夜勤希望者（現状空のリスト、必要に応じて設定）
 NIGHT_SHIFT_PREFERRED = []
 
+# Common file paths
+REQUEST_CSV_PATH = DATA_DIR / "req_shift_8.csv"
+TEMPLATE_PATH = DATA_DIR / "shift_template.xlsx"
+OUTPUT_EXCEL_PATH = BASE_DIR / "shift_output.xlsx"

@@ -1,4 +1,5 @@
 """Refine schedule with soft constraints using OR-Tools."""
+from pathlib import Path
 from typing import Dict, Tuple
 
 import pandas as pd
@@ -9,6 +10,7 @@ from utils.constants import (
     SHIFT_TYPES,
     NUM_DAYS,
     NIGHT_SHIFT_PREFERRED,
+    REQUEST_CSV_PATH,
 )
 from utils.reader import load_request_csv, parse_shift_requests
 from initial_assignment import solve_initial_model, build_hard_constraints
@@ -86,7 +88,7 @@ def add_soft_constraints(
 
 
 def optimize_final_schedule(
-    request_csv_path: str = "data/req_shift_8.csv",
+    request_csv_path: Path | str = REQUEST_CSV_PATH
 ) -> pd.DataFrame:
     """Optimize the final schedule considering soft constraints."""
     initial_df = solve_initial_model(request_csv_path)
