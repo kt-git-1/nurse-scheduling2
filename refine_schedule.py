@@ -159,5 +159,14 @@ def optimize_final_schedule(
                     if solver.Value(x[(n, d, s)]):
                         df_result.loc[nurse, f"day_{d}"] = code
                         break
+    else:
+        # If optimization failed, keep the initial solution or fill rests
+        print(
+            f"Final optimization failed (status: {solver.StatusName(status)})."
+        )
+        if initial_df is not None:
+            df_result[:] = initial_df
+        else:
+            df_result.loc[:, :] = "休"
 
     return df_result
