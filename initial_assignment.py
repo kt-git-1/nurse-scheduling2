@@ -260,6 +260,8 @@ def solve_initial_model(request_csv_path: str | Path = REQUEST_CSV_PATH) -> pd.D
         print(
             f"No feasible solution found (status: {solver.StatusName(status)})."
         )
+        # Fallback: assign all rest days to avoid invalid blanks
+        df_result.loc[:, :] = "休"
     df_result.to_csv("temp_shift.csv", encoding="utf-8-sig")
 
     return df_result
